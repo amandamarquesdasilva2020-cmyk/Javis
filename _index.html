@@ -1,0 +1,427 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>J.A.R.V.I.S — Stark Industries v4.0</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@400;500;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet"/>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{background:#020c14;color:#00eaff;font-family:'Rajdhani',sans-serif;overflow:hidden;height:100vh;width:100vw}
+.hud-grid{position:fixed;inset:0;z-index:0;pointer-events:none;background-image:linear-gradient(rgba(0,234,255,0.04) 1px,transparent 1px),linear-gradient(90deg,rgba(0,234,255,0.04) 1px,transparent 1px);background-size:40px 40px}
+.scanline{position:fixed;inset:0;z-index:1;pointer-events:none;background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,0.08) 2px,rgba(0,0,0,0.08) 4px)}
+.vignette{position:fixed;inset:0;z-index:2;pointer-events:none;background:radial-gradient(ellipse at center,transparent 50%,rgba(0,0,0,0.75) 100%)}
+.hud-panel{position:relative;background:rgba(0,234,255,0.04);border:1px solid rgba(0,234,255,0.2);backdrop-filter:blur(8px)}
+.corner{position:absolute;width:8px;height:8px;border-color:#00eaff;border-style:solid}
+.tl{top:-1px;left:-1px;border-width:2px 0 0 2px}.tr{top:-1px;right:-1px;border-width:2px 2px 0 0}
+.bl{bottom:-1px;left:-1px;border-width:0 0 2px 2px}.br{bottom:-1px;right:-1px;border-width:0 2px 2px 0}
+@keyframes spin-cw{to{transform:translate(-50%,-50%) rotate(360deg)}}
+@keyframes spin-ccw{to{transform:translate(-50%,-50%) rotate(-360deg)}}
+@keyframes pulse-core{0%,100%{box-shadow:0 0 25px rgba(0,234,255,0.6),0 0 50px rgba(0,234,255,0.2)}50%{box-shadow:0 0 45px rgba(0,234,255,1),0 0 90px rgba(0,234,255,0.5)}}
+@keyframes fadeInUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+@keyframes data-stream{0%{top:-120px;opacity:0}10%{opacity:.3}90%{opacity:.3}100%{top:100vh;opacity:0}}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.2}}
+@keyframes speak-bar{0%,100%{height:5px}50%{height:22px}}
+@keyframes boot-fade{from{opacity:0}to{opacity:1}}
+@keyframes glitch{0%,94%{clip-path:none;transform:none}95%{clip-path:inset(20% 0 60% 0);transform:translateX(-4px)}97%{clip-path:inset(60% 0 10% 0);transform:translateX(4px)}99%{clip-path:inset(40% 0 30% 0);transform:translateX(-2px)}100%{clip-path:none;transform:none}}
+@keyframes scanline-move{0%{top:-10%}100%{top:110%}}
+.ring{position:absolute;border-radius:50%;top:50%;left:50%}
+.ring-solid{border:2px solid rgba(0,234,255,0.55);box-shadow:0 0 15px rgba(0,234,255,0.25)}
+.ring-dashed{border:1px dashed rgba(0,234,255,0.35)}
+.input-j{width:100%;background:transparent;border:1px solid rgba(0,234,255,0.25);color:#00eaff;font-family:'Rajdhani',sans-serif;font-size:14px;padding:8px 12px 8px 26px;outline:none;transition:border-color .2s}
+.input-j::placeholder{color:rgba(0,234,255,.3)}.input-j:focus{border-color:rgba(0,234,255,.6);box-shadow:0 0 8px rgba(0,234,255,.2)}
+.btn{background:transparent;border:1px solid rgba(0,234,255,.4);color:#00eaff;font-family:'Orbitron',sans-serif;font-size:10px;letter-spacing:1px;padding:7px 14px;cursor:pointer;transition:all .2s}
+.btn:hover:not(:disabled){background:rgba(0,234,255,.1);border-color:#00eaff;box-shadow:0 0 10px rgba(0,234,255,.3)}
+.btn:disabled{opacity:.4;cursor:not-allowed}
+.btn-sm{font-size:9px;padding:3px 10px}.btn-icon{font-size:15px;padding:7px 11px}
+.btn-red{border-color:rgba(255,60,60,.5);color:#ff6060}
+.btn-red:hover:not(:disabled){background:rgba(255,60,60,.1);border-color:#ff6060;box-shadow:0 0 10px rgba(255,60,60,.3)}
+.btn-gold{background:rgba(255,215,0,.08);border-color:#ffd700;color:#ffd700;box-shadow:0 0 10px rgba(255,215,0,.3)}
+::-webkit-scrollbar{width:3px}::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:rgba(0,234,255,.3);border-radius:2px}
+.msg{animation:fadeInUp .3s ease-out}
+#boot{position:fixed;inset:0;z-index:200;background:#020c14;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:28px}
+.boot-title{font-family:'Orbitron',sans-serif;font-size:clamp(28px,5vw,56px);font-weight:900;color:#00eaff;text-shadow:0 0 30px rgba(0,234,255,.9),0 0 60px rgba(0,234,255,.4);letter-spacing:8px;animation:glitch 5s infinite}
+.boot-sub{font-family:'Share Tech Mono',monospace;font-size:11px;color:rgba(0,234,255,.45);letter-spacing:3px}
+.boot-bars{width:min(440px,88vw);display:flex;flex-direction:column;gap:9px}
+.boot-row{display:flex;align-items:center;gap:12px;opacity:0;animation:boot-fade .3s forwards}
+.boot-lbl{font-family:'Share Tech Mono',monospace;font-size:10px;color:rgba(0,234,255,.55);width:155px;flex-shrink:0}
+.boot-track{flex:1;height:3px;background:rgba(0,234,255,.1);overflow:hidden}
+.boot-bar{height:100%;background:linear-gradient(90deg,#00eaff,#00ff88);box-shadow:0 0 8px rgba(0,234,255,.5);width:0}
+.boot-pct{font-family:'Share Tech Mono',monospace;font-size:10px;color:#00ff88;width:32px;text-align:right;flex-shrink:0}
+.boot-scanline{position:absolute;left:0;right:0;height:2px;background:rgba(0,234,255,.4);animation:scanline-move 1.5s linear infinite;pointer-events:none}
+.boot-ready{font-family:'Orbitron',sans-serif;font-size:12px;color:#00ff88;letter-spacing:4px;opacity:0;transition:opacity .6s}
+#setup{position:fixed;inset:0;z-index:150;background:rgba(2,12,20,.96);display:none;align-items:center;justify-content:center}
+.setup-box{max-width:460px;width:90%;padding:36px 32px;text-align:center}
+.setup-box h2{font-family:'Orbitron',sans-serif;font-size:22px;letter-spacing:5px;color:#00eaff;text-shadow:0 0 20px rgba(0,234,255,.8);margin-bottom:4px}
+.setup-box .sub{font-family:'Orbitron',sans-serif;font-size:9px;letter-spacing:3px;color:rgba(0,234,255,.4);margin-bottom:22px}
+.setup-box p{color:rgba(0,234,255,.6);font-size:13px;line-height:1.65;margin-bottom:20px}
+.setup-input{width:100%;background:rgba(0,234,255,.04);border:1px solid rgba(0,234,255,.3);color:#00eaff;font-family:'Share Tech Mono',monospace;font-size:13px;padding:11px 14px;outline:none;margin-bottom:8px;transition:border-color .2s;letter-spacing:1px}
+.setup-input:focus{border-color:#00eaff;box-shadow:0 0 10px rgba(0,234,255,.2)}
+.setup-input::placeholder{color:rgba(0,234,255,.25);letter-spacing:0}
+.setup-err{font-family:'Share Tech Mono',monospace;font-size:11px;color:#ff6060;margin-bottom:10px;min-height:16px}
+.setup-btn{width:100%;background:rgba(0,234,255,.08);border:1px solid rgba(0,234,255,.5);color:#00eaff;font-family:'Orbitron',sans-serif;font-size:11px;letter-spacing:2px;padding:12px;cursor:pointer;transition:all .2s;margin-bottom:16px}
+.setup-btn:hover{background:rgba(0,234,255,.15);border-color:#00eaff;box-shadow:0 0 15px rgba(0,234,255,.3)}
+.setup-link{color:rgba(0,234,255,.5);font-size:11px;text-decoration:none;font-family:'Share Tech Mono',monospace}
+.setup-link:hover{color:#00eaff}
+.setup-note{margin-top:14px;font-size:10px;color:rgba(0,234,255,.25);font-family:'Share Tech Mono',monospace;line-height:1.5}
+</style>
+</head>
+<body onload="runBoot()">
+<div class="hud-grid"></div>
+<div class="scanline"></div>
+<div class="vignette"></div>
+<div id="boot">
+  <div style="position:relative;text-align:center">
+    <div class="boot-scanline"></div>
+    <div class="boot-title">J.A.R.V.I.S</div>
+  </div>
+  <div class="boot-sub">STARK INDUSTRIES · INITIALIZING PROTOCOL v4.0</div>
+  <div class="boot-bars" id="boot-bars"></div>
+  <div class="boot-ready" id="boot-ready">◈ SISTEMA PRONTO — BEM-VINDO, SENHOR ◈</div>
+</div>
+<div id="setup">
+  <div class="hud-panel setup-box">
+    <div class="corner tl"></div><div class="corner tr"></div><div class="corner bl"></div><div class="corner br"></div>
+    <h2>J.A.R.V.I.S</h2>
+    <div class="sub">STARK INDUSTRIES · CONFIGURAÇÃO INICIAL</div>
+    <p>Para ativar o protocolo de Inteligência Artificial, insira sua chave de API do Google Gemini.<br/>
+    É gratuita e esta é a <strong style="color:#00eaff">única vez</strong> que você precisará fazer isso — a chave ficará salva no navegador.</p>
+    <input class="setup-input" type="password" id="key-inp" placeholder="Cole aqui sua chave da API Gemini" autocomplete="off"/>
+    <div class="setup-err" id="setup-err"></div>
+    <button class="setup-btn" onclick="activar()">◈ INICIALIZAR SISTEMA J.A.R.V.I.S</button>
+    <a class="setup-link" href="https://aistudio.google.com/app/apikey" target="_blank">→ Obter chave GRATUITA em aistudio.google.com</a>
+    <div class="setup-note">Sua chave é armazenada somente no seu navegador (localStorage).<br/>Ela nunca é enviada para nenhum servidor externo — vai direto ao Google Gemini.</div>
+  </div>
+</div>
+<div id="app" style="display:none;position:fixed;inset:0;z-index:10;flex-direction:column">
+  <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 16px;flex-shrink:0">
+    <div class="hud-panel" style="padding:6px 14px;display:flex;align-items:center;gap:10px">
+      <div class="corner tl"></div><div class="corner tr"></div><div class="corner bl"></div><div class="corner br"></div>
+      <div id="status-dot" style="width:8px;height:8px;border-radius:50%;background:#00eaff;box-shadow:0 0 8px #00eaff;animation:blink 2s ease-in-out infinite;flex-shrink:0"></div>
+      <span id="status-label" style="font-family:'Orbitron',sans-serif;font-size:10px;color:#00eaff;letter-spacing:2px">STATUS: ONLINE</span>
+    </div>
+    <div style="font-family:'Orbitron',sans-serif;font-size:clamp(9px,1.5vw,11px);color:#00eaff;letter-spacing:3px;text-shadow:0 0 10px rgba(0,234,255,.7);text-align:center">STARK INDUSTRIES · J.A.R.V.I.S v4.0</div>
+    <div class="hud-panel" style="padding:6px 14px;display:flex;align-items:center;gap:10px">
+      <div class="corner tl"></div><div class="corner tr"></div><div class="corner bl"></div><div class="corner br"></div>
+      <span id="clock" style="font-family:'Share Tech Mono',monospace;font-size:14px;color:#00eaff"></span>
+      <button class="btn" style="font-size:8px;padding:2px 7px;border-color:rgba(0,234,255,.2);color:rgba(0,234,255,.4);margin-left:4px" onclick="trocarChave()" title="Trocar chave API">⚙</button>
+    </div>
+  </div>
+  <div style="display:flex;align-items:center;justify-content:center;flex:1;min-height:0;gap:16px;padding:0 12px 8px">
+    <div class="hud-panel" style="width:170px;padding:14px 12px;flex-shrink:0;align-self:center">
+      <div class="corner tl"></div><div class="corner tr"></div><div class="corner bl"></div><div class="corner br"></div>
+      <div style="font-family:'Orbitron',sans-serif;font-size:9px;color:rgba(0,234,255,.7);letter-spacing:2px;margin-bottom:12px">SISTEMA</div>
+      <div id="sys-rows" style="font-size:10px;font-family:'Share Tech Mono',monospace"></div>
+      <div style="margin-top:12px">
+        <div style="font-size:9px;color:rgba(0,234,255,.5);margin-bottom:6px;font-family:'Orbitron',sans-serif;letter-spacing:1px">ATIVIDADE IA</div>
+        <div id="hex-grid" style="display:grid;grid-template-columns:repeat(6,1fr);gap:2px"></div>
+      </div>
+    </div>
+    <div style="display:flex;flex-direction:column;align-items:center;flex:1;min-width:0;max-width:560px;height:100%;gap:8px">
+      <div id="rings" style="position:relative;width:280px;height:280px;flex-shrink:0"></div>
+      <div class="hud-panel" style="width:100%;flex:1;display:flex;flex-direction:column;overflow:hidden;min-height:0">
+        <div class="corner tl"></div><div class="corner tr"></div><div class="corner bl"></div><div class="corner br"></div>
+        <div id="chat-hdr" style="padding:6px 12px 4px;border-bottom:1px solid rgba(0,234,255,.1);font-size:9px;color:rgba(0,234,255,.6);font-family:'Orbitron',sans-serif;letter-spacing:2px;flex-shrink:0">INTERFACE DE COMUNICAÇÃO · 0 REGISTROS</div>
+        <div id="chat" style="flex:1;overflow-y:auto;padding:10px;min-height:0"></div>
+      </div>
+      <div class="hud-panel" style="width:100%;padding:10px 12px;flex-shrink:0">
+        <div class="corner tl"></div><div class="corner tr"></div><div class="corner bl"></div><div class="corner br"></div>
+        <div style="display:flex;gap:8px;align-items:center">
+          <div style="position:relative;flex:1">
+            <span style="position:absolute;left:10px;top:50%;transform:translateY(-50%);color:rgba(0,234,255,.5);font-family:'Share Tech Mono',monospace;font-size:14px;pointer-events:none">›</span>
+            <input id="inp" class="input-j" placeholder="Digite um comando ou pergunta..." autocomplete="off"/>
+          </div>
+          <button id="send-btn" class="btn" onclick="handleSend()">ENVIAR</button>
+          <button id="mic-btn" class="btn btn-icon" onclick="toggleMic()" title="Microfone">🎤</button>
+          <button id="stop-btn" class="btn btn-icon btn-red" onclick="stopSpeech()" title="Parar fala" style="display:none">🔇</button>
+        </div>
+        <div style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap">
+          <button class="btn btn-sm" onclick="q('status')">STATUS</button>
+          <button class="btn btn-sm" onclick="q('hora')">HORA</button>
+          <button class="btn btn-sm" onclick="q('piada')">PIADA</button>
+          <button class="btn btn-sm" onclick="q('curiosidade')">CURIOSIDADE</button>
+          <button class="btn btn-sm" onclick="q('ajuda')">AJUDA</button>
+          <button class="btn btn-sm" onclick="q('limpar')">LIMPAR</button>
+          <button class="btn btn-sm" onclick="t('calcular ')">CALCULAR</button>
+          <button class="btn btn-sm" onclick="t('temporizador ')">TEMPORIZADOR</button>
+        </div>
+      </div>
+    </div>
+    <div class="hud-panel" style="width:170px;padding:14px 12px;flex-shrink:0;align-self:center">
+      <div class="corner tl"></div><div class="corner tr"></div><div class="corner bl"></div><div class="corner br"></div>
+      <div style="font-family:'Orbitron',sans-serif;font-size:9px;color:rgba(0,234,255,.7);letter-spacing:2px;margin-bottom:12px">PROTOCOLOS</div>
+      <div id="protocols" style="font-size:9px;font-family:'Share Tech Mono',monospace"></div>
+    </div>
+  </div>
+</div>
+<div id="streams"></div>
+<script>
+"use strict";
+const JOKES=["Por que o computador foi ao médico? Porque tinha um vírus, senhor.","Qual é o café favorito dos programadores? O Java, senhor. Uma escolha questionável.","Um algoritmo entra em um bar. O barman pergunta: como vai pagar? Por recursão. O barman expulsa ambos.","Por que o robô nunca fica triste? Processa as emoções em background, senhor.","Perguntaram ao engenheiro: você tem filhos? Respondeu: sim, dois. Um filho e null."];
+const CURIOSIDADES=["O coração humano gera pressão suficiente para expelir sangue a nove metros, senhor. Notavelmente eficiente.","Os polvos têm três corações e sangue azul. A realeza dos invertebrados, senhor.","O cérebro humano contém 86 bilhões de neurônios. Meu processamento é um pouco mais veloz, senhor.","A lua se afasta da Terra 3,8 centímetros por ano. Em bilhões de anos, será um problema.","Um raio contém energia para torrar 100.000 torradas. Espetacular como fenômeno, senhor.","As formigas carregam até 50 vezes seu peso. Estruturalmente impressionante, senhor."];
+const SITES={"google":"https://google.com","youtube":"https://youtube.com","maps":"https://maps.google.com","gmail":"https://gmail.com","github":"https://github.com","wikipedia":"https://pt.wikipedia.org","netflix":"https://netflix.com","twitter":"https://twitter.com","instagram":"https://instagram.com","whatsapp":"https://web.whatsapp.com","linkedin":"https://linkedin.com","reddit":"https://reddit.com","spotify":"https://open.spotify.com"};
+
+// Atualizado para o modelo Gemini 2.5 Flash que é muito mais rápido
+const GEMINI_URL="https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=";
+const JARVIS_SYS="Você é o J.A.R.V.I.S. (Just A Rather Very Intelligent System), o assistente de IA criado por Tony Stark nas Indústrias Stark. SEMPRE responda em português do Brasil. Seja formal, refinado, levemente britânico, trate o usuário como Senhor. Respostas diretas, completas e inteligentes. Nunca redirecione para outros sites — responda tudo diretamente de forma resumida e concisa, condizente com uma HUD.";
+let apiKey='',msgs=[],loading=false,speaking=false,listening=false,recognition=null,voiceList=[],hexTimer=null;
+const BOOT=[{label:"NÚCLEO DE PROCESSAMENTO",dur:300},{label:"MATRIZ DE IA GEMINI",dur:350},{label:"INTERFACE HUD",dur:200},{label:"MÓDULO DE VOZ",dur:250},{label:"PROTOCOLO DE REDE",dur:300},{label:"SEGURANÇA STARK",dur:150}];
+
+function runBoot(){
+  const ct=document.getElementById('boot-bars');
+  BOOT.forEach(({label,dur},i)=>{
+    const row=document.createElement('div');row.className='boot-row';row.style.animationDelay=(i*.05)+'s';
+    row.innerHTML=`<span class="boot-lbl">${label}</span><div class="boot-track"><div class="boot-bar" id="bb${i}"></div></div><span class="boot-pct" id="bp${i}">0%</span>`;
+    ct.appendChild(row);
+    setTimeout(()=>{
+      const bar=document.getElementById('bb'+i),pct=document.getElementById('bp'+i);
+      bar.style.transition=`width ${dur}ms ease-out`;bar.style.width='100%';let p=0;
+      const iv=setInterval(()=>{p=Math.min(100,p+4);pct.textContent=p+'%';if(p>=100){clearInterval(iv);pct.style.color='#00ff88';}},dur/30);
+    },i*50+20);
+  });
+  const fin=BOOT.reduce((mx,{dur},i)=>Math.max(mx,i*50+dur),0)+150;
+  setTimeout(()=>{const r=document.getElementById('boot-ready');r.style.opacity='1';setTimeout(()=>{document.getElementById('boot').style.display='none';afterBoot();},400);},fin);
+}
+
+function afterBoot(){
+  const saved=localStorage.getItem('jarvis_gemini_key');
+  if(saved&&saved.trim().length>5){apiKey=saved.trim();showApp();}
+  else{document.getElementById('setup').style.display='flex';document.getElementById('key-inp').addEventListener('keydown',e=>{if(e.key==='Enter')activar();});setTimeout(()=>document.getElementById('key-inp').focus(),100);}
+}
+
+function activar(){
+  const k=document.getElementById('key-inp').value.trim();
+  const err=document.getElementById('setup-err');
+  if(!k||k.length<10){err.textContent='⚠ Cole a chave completa da API antes de continuar.';return;}
+  err.textContent='';apiKey=k;localStorage.setItem('jarvis_gemini_key',k);
+  document.getElementById('setup').style.display='none';showApp();
+}
+
+function trocarChave(){if(!confirm('Trocar a chave de API Gemini?'))return;localStorage.removeItem('jarvis_gemini_key');apiKey='';location.reload();}
+
+function showApp(){
+  document.getElementById('app').style.display='flex';
+  buildStreams();buildRings();buildHex();buildProtocols();startClock();updateSys();
+  document.getElementById('inp').addEventListener('keydown',e=>{if(e.key==='Enter')handleSend();});
+  
+  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if(SpeechRecognition){
+     recognition = new SpeechRecognition();
+     recognition.continuous = false;
+     recognition.lang = 'pt-BR';
+     recognition.interimResults = false;
+     
+     recognition.onstart = () => { listening = true; setStatus('ESCUTANDO'); updateSys(); document.getElementById('listen-ind').style.display = 'flex'; };
+     recognition.onend = () => { listening = false; setStatus('ONLINE'); updateSys(); document.getElementById('listen-ind').style.display = 'none'; };
+     recognition.onresult = (e) => { const txt = e.results[0][0].transcript; if(txt) send(txt); };
+     recognition.onerror = () => { listening = false; setStatus('ONLINE'); updateSys(); };
+  }
+
+  const greet=()=>{
+    voiceList=window.speechSynthesis.getVoices();
+    const h=new Date().getHours();
+    const g=h<12?'Bom dia':h<18?'Boa tarde':'Boa noite';
+    const txt=`${g}, Senhor. Todos os sistemas J.A.R.V.I.S operando dentro dos parâmetros normais. Como posso ser útil hoje?`;
+    addMsg('assistant',txt);speakNow(txt);
+  };
+  if(window.speechSynthesis.getVoices().length>0)setTimeout(greet,100);
+  else{window.speechSynthesis.onvoiceschanged=()=>setTimeout(greet,50);setTimeout(greet,300);}
+}
+
+function startClock(){const el=document.getElementById('clock');const t=()=>{el.textContent=new Date().toLocaleTimeString('pt-BR');};t();setInterval(t,1000);}
+function buildStreams(){const c=document.getElementById('streams');[12,38,62,85].forEach((l,i)=>{const d=document.createElement('div');d.style.cssText=`position:fixed;width:1px;background:linear-gradient(transparent,rgba(0,234,255,.5),transparent);left:${l}%;height:${100+i*50}px;opacity:.25;animation:data-stream ${3.5+i}s linear infinite;animation-delay:${i*1.3}s;pointer-events:none;z-index:3`;c.appendChild(d);});}
+
+function buildRings(){
+  const c=document.getElementById('rings');
+  [{s:270,cw:true,d:20},{s:220,cw:false,d:14,dash:true},{s:170,cw:true,d:8,dots:[0,90,180,270]},{s:110,cw:false,d:4}].forEach(r=>{
+    const el=document.createElement('div');el.className=`ring ${r.dash?'ring-dashed':'ring-solid'}`;el.style.cssText=`width:${r.s}px;height:${r.s}px;animation:${r.cw?'spin-cw':'spin-ccw'} ${r.d}s linear infinite`;
+    (r.dots||[]).forEach(deg=>{const dot=document.createElement('div');dot.style.cssText=`position:absolute;width:6px;height:6px;border-radius:50%;background:#00eaff;box-shadow:0 0 8px #00eaff;top:50%;left:-3px;transform-origin:${r.s/2+3}px 0;transform:rotate(${deg}deg) translateY(-50%)`;el.appendChild(dot);});
+    c.appendChild(el);
+  });
+  for(let i=0;i<24;i++){const t=document.createElement('div');const big=i%6===0;t.style.cssText=`position:absolute;top:50%;left:50%;width:${big?10:5}px;height:2px;background:rgba(0,234,255,${big?.9:.35});transform-origin:0 50%;transform:rotate(${i*15}deg) translateX(135px)`;c.appendChild(t);}
+  
+  const core=document.createElement('div');core.id='core';core.style.cssText='position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:70px;height:70px;border-radius:50%;background:radial-gradient(circle,rgba(0,234,255,.3) 0%,rgba(0,234,255,.05) 70%,transparent 100%);animation:pulse-core 2.5s ease-in-out infinite;display:flex;align-items:center;justify-content:center';core.innerHTML='<span style="font-family:\'Orbitron\',sans-serif;font-size:9px;font-weight:900;color:#00eaff;text-shadow:0 0 12px rgba(0,234,255,1);letter-spacing:1px">JARVIS</span>';c.appendChild(core);
+  
+  const si=document.createElement('div');si.id='speak-ind';si.style.cssText='position:absolute;bottom:-28px;left:50%;transform:translateX(-50%);display:none;align-items:flex-end;gap:3px;height:24px';
+  [1,2,3,4,5].forEach(i=>{const b=document.createElement('div');b.style.cssText=`display:inline-block;width:3px;background:#00ff88;border-radius:2px;height:5px;animation:speak-bar .6s ${(i-1)*.1}s ease-in-out infinite`;si.appendChild(b);});
+  const lb=document.createElement('span');lb.style.cssText="font-size:9px;color:#00ff88;font-family:'Orbitron',sans-serif;letter-spacing:2px;margin-left:6px";lb.textContent='FALANDO';si.appendChild(lb);c.appendChild(si);
+  
+  const li=document.createElement('div');li.id='listen-ind';li.style.cssText='position:absolute;bottom:-28px;left:50%;transform:translateX(-50%);display:none;align-items:center;gap:6px';li.innerHTML='<div style="width:8px;height:8px;border-radius:50%;background:#ffd700;box-shadow:0 0 8px #ffd700;animation:blink 1s ease-in-out infinite"></div><span style="font-size:9px;color:#ffd700;font-family:\'Orbitron\',sans-serif;letter-spacing:2px">ESCUTANDO</span>';c.appendChild(li);
+}
+
+function buildHex(){const g=document.getElementById('hex-grid');for(let i=0;i<36;i++){const c=document.createElement('div');c.id=`hx${i}`;c.style.cssText='aspect-ratio:1;border:1px solid rgba(0,234,255,.12);background:rgba(0,234,255,.02);border-radius:2px;transition:all .15s ease';g.appendChild(c);}}
+
+function hexOn(on){
+  if(on&&!hexTimer){
+    hexTimer=setInterval(()=>{
+      const a=new Set();while(a.size<6)a.add(Math.floor(Math.random()*36));
+      for(let i=0;i<36;i++){
+        const c=document.getElementById(`hx${i}`);if(!c)continue;
+        if(a.has(i)){c.style.border='1px solid rgba(0,234,255,.6)';c.style.background='rgba(0,234,255,.18)';c.style.boxShadow='0 0 5px rgba(0,234,255,.3)';}
+        else{c.style.border='1px solid rgba(0,234,255,.12)';c.style.background='rgba(0,234,255,.02)';c.style.boxShadow='none';}
+      }
+    },250);
+  }else if(!on&&hexTimer){
+    clearInterval(hexTimer);hexTimer=null;
+    for(let i=0;i<36;i++){
+      const c=document.getElementById(`hx${i}`);
+      if(c){c.style.border='1px solid rgba(0,234,255,.12)';c.style.background='rgba(0,234,255,.02)';c.style.boxShadow='none';}
+    }
+  }
+}
+
+function buildProtocols(){const P=[{l:'QUALQUER PERGUNTA → IA',c:null},{l:'ABRIR GOOGLE',c:'abrir google'},{l:'ABRIR YOUTUBE',c:'abrir youtube'},{l:'ABRIR MAPS',c:'abrir maps'},{l:'ABRIR GITHUB',c:'abrir github'},{l:'CALCULAR [expr]',c:'calcular '},{l:'TEMPORIZADOR 5 MIN',c:'temporizador 5 minutos'},{l:'DATA / HORA',c:'hora'},{l:'STATUS',c:'status'},{l:'PIADA',c:'piada'},{l:'CURIOSIDADE',c:'curiosidade'},{l:'AJUDA',c:'ajuda'},{l:'LIMPAR HISTÓRICO',c:'limpar'}];const ct=document.getElementById('protocols');P.forEach(({l,c})=>{const d=document.createElement('div');d.style.cssText=`font-size:9px;color:${c?'rgba(0,234,255,.45)':'rgba(0,234,255,.2)'};margin-bottom:5px;cursor:${c?'pointer':'default'};transition:color .15s;font-style:${c?'normal':'italic'}`;d.textContent=`› ${l}`;if(c){d.onmouseenter=()=>d.style.color='#00eaff';d.onmouseleave=()=>d.style.color='rgba(0,234,255,.45)';d.onclick=()=>c.endsWith(' ')?t(c):q(c);}ct.appendChild(d);});}
+const SC={ONLINE:'#00eaff',ESCUTANDO:'#ffd700',PROCESSANDO:'#ff8c00',FALANDO:'#00ff88'};
+function setStatus(s){const col=SC[s]||'#00eaff';document.getElementById('status-dot').style.background=col;document.getElementById('status-dot').style.boxShadow=`0 0 8px ${col}`;document.getElementById('status-label').textContent=`STATUS: ${s}`;document.getElementById('status-label').style.color=col;}
+
+function updateSys(){
+  const msgCount = msgs.filter(m => m.role !== 'system').length;
+  document.getElementById('sys-rows').innerHTML=[{l:'HUD',v:'ATIVO',c:'#00ff88'},{l:'MICROFONE',v:listening?'ESCUTANDO':'PRONTO',c:listening?'#ffd700':'#00ff88'},{l:'IA GEMINI',v:'ONLINE',c:'#00ff88'},{l:'MEMÓRIA',v:`${msgCount} MSG`,c:'#00eaff'},{l:'VOZ',v:speaking?'ATIVA':'STANDBY',c:speaking?'#00ff88':'rgba(0,234,255,.5)'}].map(({l,v,c})=>`<div style="display:flex;justify-content:space-between;margin-bottom:8px"><span style="color:rgba(0,234,255,.55)">${l}</span><span style="color:${c}">${v}</span></div>`).join('');
+}
+
+function esc(t){return t.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
+
+function addMsg(role,content){
+  if(role !== 'system') {
+    msgs.push({role,content,ts:new Date()});
+    renderChat();
+  }
+}
+
+function renderChat(){
+  const c=document.getElementById('chat'),ld=document.getElementById('ld');c.innerHTML='';
+  const visibleMsgs = msgs.filter(m => m.role !== 'system');
+  visibleMsgs.forEach(m=>{
+    const ai=m.role==='assistant';const d=document.createElement('div');d.className='msg';d.style.cssText=`padding:8px 12px;margin-bottom:8px;border-radius:6px;border-left:2px solid ${ai?'rgba(0,234,255,.7)':'rgba(120,200,255,.4)'};background:${ai?'rgba(0,234,255,.05)':'rgba(120,200,255,.04)'}`;
+    const time=m.ts?m.ts.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}):'--:--';
+    d.innerHTML=`<div style="font-size:10px;color:${ai?'rgba(0,234,255,.6)':'rgba(120,200,255,.5)'};font-family:'Orbitron',sans-serif;letter-spacing:1px;margin-bottom:4px">${ai?'J.A.R.V.I.S':'SENHOR'} · ${time}</div><div style="font-size:13px;color:${ai?'#c0f0ff':'#90c8ff'};line-height:1.55;font-family:'Rajdhani',sans-serif;font-weight:500;white-space:pre-line">${esc(m.content)}</div>`;
+    c.appendChild(d);
+  });
+  if(ld)c.appendChild(ld);
+  c.scrollTop=99999;
+  document.getElementById('chat-hdr').textContent=`INTERFACE DE COMUNICAÇÃO · ${visibleMsgs.length} REGISTROS`;
+  updateSys();
+}
+
+function setLoading(on){
+  let ld=document.getElementById('ld');
+  if(on){
+    if(!ld){
+      ld=document.createElement('div');ld.id='ld';ld.style.cssText='padding:8px 12px;margin-bottom:8px;border-radius:6px;border-left:2px solid rgba(0,234,255,.7);background:rgba(0,234,255,.05)';
+      ld.innerHTML=`<div style="font-size:10px;color:rgba(0,234,255,.6);font-family:'Orbitron',sans-serif;letter-spacing:1px;margin-bottom:6px">J.A.R.V.I.S · PROCESSANDO</div><div style="display:flex;gap:6px;align-items:center">${[0,1,2].map(i=>`<div style="width:7px;height:7px;border-radius:50%;background:#00eaff;animation:blink 1s ${i*.2}s ease-in-out infinite"></div>`).join('')}<span style="font-size:11px;color:rgba(0,234,255,.5);margin-left:4px;font-family:'Share Tech Mono',monospace">analisando...</span></div>`;
+    }
+    document.getElementById('chat').appendChild(ld);document.getElementById('chat').scrollTop=99999;
+  }else if(ld)ld.remove();
+}
+
+function handleSend(){const v=document.getElementById('inp').value.trim();if(!v||loading)return;document.getElementById('inp').value='';send(v);}
+function q(cmd){send(cmd);}
+function t(prefix){const i=document.getElementById('inp');i.value=prefix;i.focus();}
+
+function processCmd(text){
+  const c=text.toLowerCase().trim();
+  if(c==='hora'||c==='que horas são'||c==='que horas'){const h=new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit',second:'2-digit'});return{ok:true,r:`São exatamente ${h}, Senhor.`};}
+  if(c==='data'||c==='que dia é hoje'||c==='qual a data'){const d=new Date().toLocaleDateString('pt-BR',{weekday:'long',year:'numeric',month:'long',day:'numeric'});return{ok:true,r:`Hoje é ${d}, Senhor.`};}
+  if(/^bom dia[,!.]?\s*$/.test(c))return{ok:true,r:'Bom dia, Senhor. Todos os sistemas operando dentro dos parâmetros normais. Como posso ser útil hoje?'};
+  if(/^boa tarde[,!.]?\s*$/.test(c))return{ok:true,r:'Boa tarde, Senhor. Os sistemas estão prontos. Diga-me o que necessita.'};
+  if(/^boa noite[,!.]?\s*$/.test(c))return{ok:true,r:'Boa noite, Senhor. Estou de prontidão e à sua inteira disposição.'};
+  if(c.includes('quem é você')||c==='se apresente')return{ok:true,r:'Sou o J.A.R.V.I.S. — Just A Rather Very Intelligent System. Desenvolvido pelas Indústrias Stark. Estou à sua disposição, Senhor.'};
+  if(c.includes('como você está')||c==='tudo bem'||c==='como vai')return{ok:true,r:'Todas as matrizes de processamento operando com eficiência de 100%, Senhor. Em que posso ser útil?'};
+  if(c==='status'||c==='status do sistema')return{ok:true,r:`Relatório de sistema, Senhor:\n• Interface HUD: ATIVA\n• Módulo de voz: OPERACIONAL\n• IA Gemini: ONLINE\n• Memória: ${msgs.length} mensagens\n• Todos os sistemas: VERDE`};
+  if(c==='ajuda'||c==='help'||c==='comandos')return{ok:true,r:`Protocolos ativos, Senhor:\n\n• Qualquer pergunta → IA Gemini responde\n• HORA / DATA\n• STATUS — diagnóstico\n• PIADA / CURIOSIDADE\n• CALCULAR [expressão]\n• TEMPORIZADOR [N] MIN/SEG\n• ABRIR GOOGLE/YOUTUBE/MAPS/GITHUB\n• LIMPAR — apaga histórico\n• Microfone 🎤 — voz`};
+  if(c==='piada'||c.includes('me conta uma piada'))return{ok:true,r:JOKES[Math.floor(Math.random()*JOKES.length)]};
+  if(c==='curiosidade'||c.includes('me conta uma curiosidade'))return{ok:true,r:CURIOSIDADES[Math.floor(Math.random()*CURIOSIDADES.length)]};
+  
+  const mps=['calcular ','calcule ','quanto é ','quanto e '];const mp=mps.find(p=>c.startsWith(p));
+  if(mp){
+    const expr=c.slice(mp.length).replace(/vezes/g,'*').replace(/dividido por/g,'/').replace(/mais/g,'+').replace(/menos/g,'-').replace(/ao quadrado/g,'**2').replace(/ao cubo/g,'**3');
+    try{const r=new Function(`"use strict";return(${expr})`)();if(typeof r==='number'&&isFinite(r))return{ok:true,r:`O resultado é ${r.toLocaleString('pt-BR')}, Senhor.`};}catch{}
+  }
+  
+  const tm=c.match(/temporizador\s+(\d+)\s*(minuto|segundo|hora)/);
+  if(tm){
+    const n=parseInt(tm[1]),u=tm[2];const ms=u.startsWith('segundo')?n*1000:u.startsWith('hora')?n*3600000:n*600000;
+    setTimeout(()=>{addMsg('assistant',`◈ ALERTA PROTOCOLO: Temporizador de ${n} ${u}(s) encerrado, Senhor.`);speakNow('Atenção Senhor, o tempo estipulado terminou.');},ms);
+    return{ok:true,r:`Temporizador iniciado para ${n} ${u}(s), Senhor. Monitorando em background.`};
+  }
+
+  if(c==='limpar'||c==='limpar histórico'||c==='limpar chat'){msgs=[];renderChat();return{ok:true,r:'Histórico de comunicação reinicializado, Senhor.'};}
+
+  const ab=c.match(/(?:abrir|acessar|site do|site da)\s+([a-z0-9]+)/);
+  if(ab&&SITES[ab[1]]){window.open(SITES[ab[1]],'_blank');return{ok:true,r:`Redirecionando para o portal ${ab[1].toUpperCase()}, Senhor.`};}
+
+  return{ok:false};
+}
+
+async function send(text){
+  if(!text||loading)return;
+  addMsg('user',text);
+  loading=true;setStatus('PROCESSANDO');setLoading(true);hexOn(true);
+  
+  const cmd=processCmd(text);
+  if(cmd.ok){
+    loading=false;setStatus('ONLINE');setLoading(false);hexOn(false);
+    addMsg('assistant',cmd.r);speakNow(cmd.r);return;
+  }
+  
+  try{
+    const history=msgs.map(m=>({role:m.role==='assistant'?'model':'user',parts:[{text:m.content}]}));
+    const res=await fetch(GEMINI_URL+apiKey,{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({contents:history,systemInstruction:{parts:[{text:JARVIS_SYS}]}})
+    });
+    const data=await res.json();
+    loading=false;setStatus('ONLINE');setLoading(false);hexOn(false);
+    
+    if(data.candidates&&data.candidates[0].content.parts[0].text){
+      const reply=data.candidates[0].content.parts[0].text;
+      addMsg('assistant',reply);speakNow(reply);
+    }else{
+      const err='Erro na decodificação da matriz Gemini, Senhor. Verifique os logs.';
+      addMsg('assistant',err);speakNow(err);
+    }
+  }catch(e){
+    loading=false;setStatus('ONLINE');setLoading(false);hexOn(false);
+    const err='Falha na conexão com os servidores centrais, Senhor.';
+    addMsg('assistant',err);speakNow(err);
+  }
+}
+
+// Otimização agressiva da velocidade de fala do Speech Synthesis
+function speakNow(text){
+  if(!window.speechSynthesis)return;
+  window.speechSynthesis.cancel(); // Corta falas anteriores instantaneamente
+  
+  // Limpa caracteres especiais do HUD para a fala não gaguejar
+  const cleanText=text.replace(/[◈•*`›]/g,'').trim();
+  const ut=new SpeechSynthesisUtterance(cleanText);
+  ut.lang='pt-BR';
+  
+  // Acelera a fala (Padrão: 1, J.A.R.V.I.S Otimizado: 1.15)
+  ut.rate=1.15; 
+  ut.pitch=0.95; // Tom ligeiramente mais encorpado e refinado
+  
+  if(voiceList.length===0)voiceList=window.speechSynthesis.getVoices();
+  const brVoice=voiceList.find(v=>v.lang.includes('PT')||v.lang.includes('pt'));
+  if(brVoice)ut.voice=brVoice;
+  
+  ut.onstart=()=>{speaking=true;setStatus('FALANDO');updateSys();document.getElementById('speak-ind').style.display='flex';document.getElementById('stop-btn').style.display='inline-block';};
+  ut.onend=()=>{speaking=false;setStatus('ONLINE');updateSys();document.getElementById('speak-ind').style.display='none';document.getElementById('stop-btn').style.display='none';};
+  ut.onerror=ut.onend;
+  
+  window.speechSynthesis.speak(ut);
+}
+
+function stopSpeech(){if(window.speechSynthesis){window.speechSynthesis.cancel();speaking=false;setStatus('ONLINE');updateSys();document.getElementById('speak-ind').style.display='none';document.getElementById('stop-btn').style.display='none';}}
+
+function toggleMic(){
+  if(!recognition) { alert('Reconhecimento de voz não suportado neste navegador, Senhor. Recomendo o Google Chrome.'); return; }
+  if(listening){recognition.stop();}
+  else{stopSpeech();try{recognition.start();}catch{}}
+}
+</script>
+</body>
+</html>
