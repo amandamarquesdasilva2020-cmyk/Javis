@@ -1,0 +1,300 @@
+```html
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>J.A.R.V.I.S — Stark Industries HUD v7.0</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght=400;700;900&family=Rajdhani:wght=500;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet"/>
+<style>
+*::before,*,*::after{box-sizing:border-box;margin:0;padding:0}
+body{background:#01070e;color:#00eaff;font-family:'Rajdhani',sans-serif;overflow:hidden;height:100vh;width:100vw}
+
+.hud-grid{position:fixed;inset:0;z-index:0;pointer-events:none;background-image:linear-gradient(rgba(0,234,255,0.015) 1px,transparent 1px),linear-gradient(90deg,rgba(0,234,255,0.015) 1px,transparent 1px);background-size:40px 40px}
+.scanline{position:fixed;inset:0;z-index:1;pointer-events:none;background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,0.2) 2px,rgba(0,0,0,0.2) 4px)}
+.vignette{position:fixed;inset:0;z-index:2;pointer-events:none;background:radial-gradient(ellipse at center,transparent 40%,rgba(1,4,8,0.95) 100%)}
+
+.hud-panel{position:relative;background:rgba(1,10,18,0.8);border:1px solid rgba(0,234,255,0.15);backdrop-filter:blur(10px);box-shadow:inset 0 0 20px rgba(0,234,255,0.04)}
+.corner{position:absolute;width:10px;height:10px;border-color:#00eaff;border-style:solid}
+.tl{top:-1px;left:-1px;border-width:2px 0 0 2px} .tr{top:-1px;right:-1px;border-width:2px 2px 0 0}
+.bl{bottom:-1px;left:-1px;border-width:0 0 2px 2px} .br{bottom:-1px;right:-1px;border-width:0 2px 2px 0}
+
+@keyframes pulse-slow { 0%,100%{transform:scale(1);opacity:0.4;box-shadow:0 0 30px rgba(0,234,255,0.2)} 50%{transform:scale(1.02);opacity:0.6;box-shadow:0 0 45px rgba(0,234,255,0.4)} }
+@keyframes spin-cw { to { transform: rotate(360deg); } }
+@keyframes spin-ccw { to { transform: rotate(-360deg); } }
+@keyframes neon-glow { 0%,100%{text-shadow:0 0 15px rgba(0,234,255,0.6)} 50%{text-shadow:0 0 25px rgba(0,234,255,0.9)} }
+
+.input-j{width:100%;background:rgba(0,20,35,0.6);border:1px solid rgba(0,234,255,0.25);color:#00eaff;font-family:'Share Tech Mono',monospace;font-size:14px;padding:10px;outline:none;letter-spacing:1px;text-align:center}
+.input-j:focus{border-color:rgba(0,234,255,0.6);box-shadow:0 0 12px rgba(0,234,255,0.25)}
+.btn{background:rgba(0,234,255,0.05);border:1px solid rgba(0,234,255,0.3);color:#00eaff;font-family:'Orbitron',sans-serif;font-size:10px;letter-spacing:2px;padding:10px 16px;cursor:pointer;font-weight:700;width:100%;transition:all 0.2s}
+.btn:hover{background:rgba(0,234,255,0.15);border-color:#00eaff;box-shadow:0 0 12px rgba(0,234,255,0.35)}
+.btn-sm{font-size:9px;padding:6px 10px;border-color:rgba(0,234,255,0.2);background:transparent;text-align:left;width:100%;margin-bottom:5px}
+.btn-icon{font-size:14px;padding:8px 12px;width:auto}
+.btn-red{border-color:rgba(255,70,70,0.4);color:#ff5555}
+.btn-red:hover{background:rgba(255,70,70,0.15);border-color:#ff5555}
+
+.matrix-container {position:relative;width:300px;height:300px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.hud-ring {position:absolute;border-radius:50%;border:1px solid transparent}
+.ring-outer-dashed { width: 290px; height: 290px; border: 1px dashed rgba(0, 234, 255, 0.15); animation: spin-cw 35s linear infinite; }
+.ring-tech-1 { width: 250px; height: 250px; border-top: 2px solid rgba(0, 234, 255, 0.35); animation: spin-ccw 18s linear infinite; }
+.ring-tech-2 { width: 220px; height: 220px; border-left: 1px solid rgba(0, 234, 255, 0.2); animation: spin-cw 10s linear infinite; }
+
+.jarvis-orb {
+  position: relative;
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(0,234,255,0.2) 0%, rgba(1,7,14,0.9) 75%);
+  border: 2px solid rgba(0, 234, 255, 0.45);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  z-index: 5;
+  animation: pulse-slow 3.5s ease-in-out infinite;
+}
+.jarvis-orb.speaking { border-color: #00ffaa; background: radial-gradient(circle, rgba(0,255,170,0.25) 0%, rgba(1,10,14,0.85) 75%); box-shadow: 0 0 40px rgba(0, 255, 170, 0.4); }
+.jarvis-orb.listening { border-color: #ffaa00; background: radial-gradient(circle, rgba(255,170,0,0.25) 0%, rgba(10,6,1,0.85) 75%); box-shadow: 0 0 40px rgba(255, 170, 0, 0.4); }
+
+.orb-label { font-family:'Orbitron',sans-serif; font-size:11px; font-weight:900; color:#00eaff; letter-spacing:3px; animation:neon-glow 3s infinite; }
+.orb-status-text { font-family:'Share Tech Mono',monospace; font-size:8px; color:rgba(0, 234, 255, 0.5); margin-top:4px; }
+
+#boot{position:fixed;inset:0;z-index:200;background:#01070e;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:15px}
+.boot-title-image{font-family:'Orbitron',sans-serif;font-size:42px;font-weight:900;color:#00eaff;text-shadow:0 0 20px rgba(0,234,255,0.6);letter-spacing:10px}
+.boot-track-hidden{width:180px;height:2px;background:rgba(0,234,255,0.05);overflow:hidden;position:relative}
+.boot-bar-hidden{height:100%;width:0;background:#00eaff;box-shadow:0 0 8px #00eaff;transition:width 1.5s linear}
+
+#setup{position:fixed;inset:0;z-index:150;background:#01070e;display:none;align-items:center;justify-content:center}
+.setup-box{width:400px;padding:30px;text-align:center}
+
+.creator-signature {
+  position: absolute;
+  bottom: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-family: 'Orbitron', sans-serif;
+  font-size: 9px;
+  letter-spacing: 3px;
+  color: rgba(0, 234, 255, 0.25);
+  text-transform: uppercase;
+  pointer-events: none;
+  z-index: 5;
+}
+.creator-signature span { color: rgba(0, 255, 170, 0.5); text-shadow: 0 0 8px rgba(0, 255, 170, 0.3); }
+</style>
+</head>
+<body>
+<div class="hud-grid"></div>
+<div class="scanline"></div>
+<div class="vignette"></div>
+
+<!-- TELA DE REBOOT -->
+<div id="boot">
+  <div class="boot-title-image">J.A.R.V.I.S</div>
+  <div class="boot-sub-image" style="font-family:'Share Tech Mono',monospace;font-size:10px;color:rgba(0,234,255,0.5);letter-spacing:4px">STARK INDUSTRIES · INITIALIZING</div>
+  <div class="boot-track-hidden"><div class="boot-bar-hidden" id="loading-bar"></div></div>
+</div>
+
+<!-- VALIDAÇÃO DA CHAVE -->
+<div id="setup">
+  <div class="hud-panel setup-box">
+    <div class="corner tl"></div><div class="corner tr"></div><div class="corner bl"></div><div class="corner br"></div>
+    <h3 style="font-family:'Orbitron',sans-serif;letter-spacing:4px;margin-bottom:15px;font-size:16px">DIRETRIZ DE SEGURANÇA</h3>
+    <input class="input-j" type="password" id="key-inp" placeholder="INSIRA A CHAVE API GEMINI" style="margin-bottom:15px"/>
+    <button class="btn" onclick="activar()">INICIAR RECONEXÃO</button>
+  </div>
+</div>
+
+<!-- HUD PRINCIPAL -->
+<div id="app" style="display:none;position:fixed;inset:0;z-index:10;flex-direction:column;padding:15px">
+  <div style="display:flex;align-items:center;justify-content:space-between;width:100%;margin-bottom:15px">
+    <div class="hud-panel" style="padding:10px;width:220px;display:flex;align-items:center;gap:10px">
+      <div class="corner tl"></div><div class="corner tr"></div><div class="corner bl"></div><div class="corner br"></div>
+      <div id="status-dot" style="width:8px;height:8px;border-radius:50%;background:#00eaff;box-shadow:0 0 10px #00eaff"></div>
+      <span id="status-label" style="font-family:'Orbitron',sans-serif;font-size:10px;letter-spacing:2px">SYS STATUS: ONLINE</span>
+    </div>
+    <div style="font-family:'Orbitron',sans-serif;font-size:14px;font-weight:900;letter-spacing:5px">HUD CONTROL CENTER</div>
+    <div class="hud-panel" style="padding:10px;width:220px;text-align:right">
+      <div class="corner tl"></div><div class="corner tr"></div><div class="corner bl"></div><div class="corner br"></div>
+      <span id="clock" style="font-family:'Share Tech Mono',monospace;font-size:14px">00:00:00</span>
+    </div>
+  </div>
+
+  <div style="display:flex;flex:1;min-height:0;gap:15px;align-items:stretch;position:relative;padding-bottom:30px">
+    <!-- COLUNA ESQUERDA -->
+    <div class="hud-panel" style="width:220px;padding:15px;display:flex;flex-direction:column;gap:10px">
+      <div class="corner tl"></div><div class="corner tr"></div><div class="corner bl"></div><div class="corner br"></div>
+      <div style="font-family:'Orbitron',sans-serif;font-size:10px;color:rgba(0,234,255,0.5);letter-spacing:2px">NÚCLEO SYSTEM</div>
+      <div id="sys-rows" style="font-size:12px;font-family:'Share Tech Mono',monospace;display:flex;flex-direction:column;gap:6px"></div>
+      <div style="margin-top:auto"><button class="btn btn-sm" onclick="trocarChave()">⚙️ RESETAR CHAVE API</button></div>
+    </div>
+
+    <!-- COLUNA CENTRAL -->
+    <div style="display:flex;flex-direction:column;align-items:center;flex:1;gap:15px">
+      <div class="matrix-container">
+        <div class="hud-ring ring-outer-dashed"></div>
+        <div class="hud-ring ring-tech-1"></div>
+        <div class="hud-ring ring-tech-2"></div>
+        <div id="jarvis-core" class="jarvis-orb">
+          <span class="orb-label" id="core-lbl">JARVIS</span>
+          <span class="orb-status-text" id="core-sub-lbl">SISTEMA OCIOSO</span>
+        </div>
+      </div>
+
+      <div class="hud-panel" style="width:100%;flex:1;display:flex;flex-direction:column;overflow:hidden">
+        <div class="corner tl"></div><div class="corner tr"></div><div class="corner bl"></div><div class="corner br"></div>
+        <div id="chat" style="flex:1;overflow-y:auto;padding:15px;font-family:'Share Tech Mono',monospace;font-size:13px;line-height:1.5;"></div>
+      </div>
+
+      <div class="hud-panel" style="width:100%;padding:10px">
+        <div class="corner tl"></div><div class="corner tr"></div><div class="corner bl"></div><div class="corner br"></div>
+        <div style="display:flex;gap:10px">
+          <input id="inp" class="input-j" placeholder="Insira comando de voz ou texto..." autocomplete="off"/>
+          <button class="btn" style="width:auto" onclick="handleSend()">EXECUTAR</button>
+          <button id="mic-btn" class="btn btn-icon" onclick="toggleMic()">🎤</button>
+          <button id="stop-btn" class="btn btn-icon btn-red" onclick="stopSpeech()" style="display:none">■</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- COLUNA DIREITA -->
+    <div class="hud-panel" style="width:220px;padding:15px;display:flex;flex-direction:column;gap:10px">
+      <div class="corner tl"></div><div class="corner tr"></div><div class="corner bl"></div><div class="corner br"></div>
+      <div style="font-family:'Orbitron',sans-serif;font-size:10px;color:rgba(0,234,255,0.5);letter-spacing:2px;font-weight:700">MACROS</div>
+      <button class="btn btn-sm" onclick="send('status')">// DIAGNÓSTICO</button>
+      <button class="btn btn-sm" onclick="send('hora')">// SINCRO HORÁRIO</button>
+    </div>
+
+    <div class="creator-signature">PROJETO DESENVOLVIDO POR: <span>SENHOR MEU CRIADOR</span></div>
+  </div>
+</div>
+
+<script>
+"use strict";
+const GEMINI_URL="https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=";
+const JARVIS_SYS="Você é o J.A.R.V.I.S., uma IA britânica ultra-sofisticada criada pelo usuário, a quem chama exclusivamente de 'Senhor'. Fale de forma altamente elegante, fluida e natural, agindo como o assistente definitivo.";
+
+let apiKey='', msgs=[], loading=false, speaking=false, listening=false, recognition=null, selectedVoice=null;
+
+function initVoice(){
+  if(!window.speechSynthesis) return;
+  const load = () => {
+    let list = window.speechSynthesis.getVoices();
+    selectedVoice = list.find(v => v.name.toLowerCase().includes('daniel') || v.name.toLowerCase().includes('google português')) || list.find(v => v.lang.startsWith('pt'));
+  };
+  load();
+  if(window.speechSynthesis.onvoiceschanged !== undefined) window.speechSynthesis.onvoiceschanged = load;
+}
+initVoice();
+
+function speakNow(text){
+  if(!window.speechSynthesis) return;
+  window.speechSynthesis.cancel();
+  const clean = text.replace(/[•◈▷›\n*#_]/g,' ').trim();
+  const u = new SpeechSynthesisUtterance(clean);
+  if(selectedVoice) u.voice = selectedVoice;
+  u.lang = "pt-BR"; u.pitch = 0.88; u.rate = 1.05;
+  
+  u.onstart = () => {
+    speaking = true; setStatus('FALANDO');
+    document.getElementById('jarvis-core').className = 'jarvis-orb speaking';
+    document.getElementById('core-lbl').textContent = 'TRANSMITINDO';
+    document.getElementById('stop-btn').style.display = 'inline-block';
+  };
+  u.onend = () => {
+    speaking = false; setStatus('ONLINE');
+    document.getElementById('jarvis-core').className = 'jarvis-orb';
+    document.getElementById('core-lbl').textContent = 'JARVIS';
+    document.getElementById('stop-btn').style.display = 'none';
+  };
+  u.onerror = u.onend;
+  window.speechSynthesis.speak(u);
+}
+
+function stopSpeech(){ if(window.speechSynthesis){ window.speechSynthesis.cancel(); speaking=false; setStatus('ONLINE'); document.getElementById('jarvis-core').className='jarvis-orb'; document.getElementById('stop-btn').style.display='none'; }}
+
+function startBoot(){
+  const bar = document.getElementById('loading-bar');
+  if(bar) bar.style.width = '100%';
+  setTimeout(() => {
+    document.getElementById('boot').style.display = 'none';
+    const saved = localStorage.getItem('jarvis_gemini_key');
+    if(saved && saved.length > 10){ apiKey = saved; showApp(); } 
+    else { document.getElementById('setup').style.display = 'flex'; }
+  }, 1600);
+}
+
+function activar(){
+  const v = document.getElementById('key-inp').value.trim();
+  if(!v) return; apiKey = v; localStorage.setItem('jarvis_gemini_key', v);
+  document.getElementById('setup').style.display = 'none'; showApp();
+}
+
+function trocarChave(){ localStorage.removeItem('jarvis_gemini_key'); location.reload(); }
+
+function showApp(){
+  document.getElementById('app').style.display = 'flex';
+  setInterval(() => { document.getElementById('clock').textContent = new Date().toLocaleTimeString('pt-BR'); }, 1000);
+  updateSys();
+  document.getElementById('inp').addEventListener('keydown', e => { if(e.key === 'Enter') handleSend(); });
+
+  const Rec = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if(Rec){
+    recognition = new Rec(); recognition.continuous = false; recognition.lang = 'pt-BR';
+    recognition.onstart = () => { listening = true; setStatus('ESCUTANDO'); document.getElementById('jarvis-core').className = 'jarvis-orb listening'; };
+    recognition.onend = () => { listening = false; setStatus('ONLINE'); if(!speaking) document.getElementById('jarvis-core').className = 'jarvis-orb'; };
+    recognition.onresult = (e) => { send(e.results[0][0].transcript); };
+  }
+  addMsg('assistant', "Protocolos ativos sob sua assinatura. O que deseja fazer, Senhor?");
+  speakNow("Protocolos ativos sob sua assinatura. O que deseja fazer, Senhor?");
+}
+
+function setStatus(s){ 
+  const colors = { ONLINE: '#00eaff', ESCUTANDO: '#ffaa00', PROCESSANDO: '#ff5500', FALANDO: '#00ffaa' };
+  const current = colors[s] || '#00eaff';
+  document.getElementById('status-dot').style.backgroundColor = current;
+  document.getElementById('status-label').textContent = `SYS STATUS: ${s}`; 
+}
+
+function updateSys(){ document.getElementById('sys-rows').innerHTML = `<div>AUTOR: <span style="color:#00ffaa">CRIADOR</span></div><div>LOGS: ${msgs.length} CHANNELS</div>`; }
+
+function addMsg(role, content){ 
+  msgs.push({role, content}); 
+  const c = document.getElementById('chat'); 
+  const d = document.createElement('div'); 
+  d.style.margin = '6px 0'; 
+  const prefix = role === 'assistant' ? '<span style="color:#00eaff">[JARVIS]</span>' : '<span style="color:#ffaa00">[CRIADOR]</span>';
+  d.innerHTML = `${prefix}: ${content}`; 
+  c.appendChild(d); 
+  c.scrollTop = 99999; 
+  updateSys(); 
+}
+
+function handleSend(){ const i = document.getElementById('inp'); const v = i.value.trim(); if(!v) return; i.value = ''; send(v); }
+
+async function send(t){
+  if(loading) return; addMsg('user', t);
+  const c = t.toLowerCase();
+  if(c === 'hora'){ const h = `São exatamente ${new Date().toLocaleTimeString('pt-BR')}, Senhor.`; addMsg('assistant', h); speakNow(h); return; }
+  if(c === 'status'){ const s = "Sistemas completamente estáveis sob sua diretriz, Senhor."; addMsg('assistant', s); speakNow(s); return; }
+
+  loading = true; setStatus('PROCESSANDO');
+  try {
+    const res = await fetch(GEMINI_URL + apiKey, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ contents: msgs.map(m => ({ role: m.role === 'assistant' ? 'model' : 'user', parts: [{ text: m.content }] })), systemInstruction: { parts: [{ text: JARVIS_SYS }] } })
+    });
+    const d = await res.json(); loading = false; setStatus('ONLINE');
+    if(d.candidates && d.candidates[0].content.parts[0]){
+      const txt = d.candidates[0].content.parts[0].text; addMsg('assistant', txt); speakNow(txt);
+    } else { addMsg('assistant', "Erro na validação da chave API, Senhor."); }
+  } catch(e){ loading = false; setStatus('ONLINE'); addMsg('assistant', "Falha de conexão com os servidores, Senhor."); }
+}
+
+function toggleMic(){ if(!recognition) return; if(listening) recognition.stop(); else recognition.start(); }
+window.onload = startBoot;
+</script>
+</body>
+</html>
